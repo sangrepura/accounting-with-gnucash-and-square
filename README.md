@@ -4,10 +4,11 @@
 
 This project establishes a robust, automated system for reconciling daily and monthly financial activity from Square into the GnuCash double-entry ledger.
 
-The core solution utilizes a custom Node.js script and precise spreadsheet logic (`VLOOKUP`) to merge and transform two disparate Square reports (Transfers and Sales Summary) into a single, balanced QIF import file.
+### What is GnuCash?  
 
-This eliminates the need for manual, error-prone data entry and the complex creation of split transactions
-The result is a controlled, two-phase reconciliation process—importing splits into a temporary holding account, followed by matching against the bank's CSV statement—which guarantees accuracy, saves significant monthly labor hours, and delivers timely, accurate financial statements.
+GnuCash, is a free and open-source, double-entry accounting solution that provides a mature and highly reliable foundation for business finances. It installs and runs without connecting to the internet on all platforms (Windows, Mac, and Linux), so there is zero vendor lock-in.
+
+It is known for its stability, benefiting from continuous, community-driven development since its first stable release in 1998, providing a mature and highly reliable foundation for business finances.
 
 ## Problem Statement
 
@@ -21,6 +22,13 @@ This fundamental data gap forces businesses to dedicate substantial monthly effo
 - Execute complex, four-part split transactions in the GnuCash ledger.
 
 This manual process is highly susceptible to human error, creates drag on monthly closing procedures, and prevents the timely and accurate generation of Profit & Loss and Balance Sheet statements. The existing manual workflow is inefficient and does not scale.
+
+## Solution Overview
+
+The core solution utilizes a custom Node.js script and precise spreadsheet logic (`VLOOKUP`) to merge and transform two disparate Square reports (Transfers and Sales Summary) into a single, balanced QIF import file.
+
+This eliminates the need for manual, error-prone data entry and the complex creation of split transactions
+The result is a controlled, two-phase reconciliation process—importing splits into a temporary holding account, followed by matching against the bank's CSV statement—which guarantees accuracy, saves significant monthly labor hours, and delivers timely, accurate financial statements.
 
 ## Rationale and Competitive Advantage
 
