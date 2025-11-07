@@ -16,9 +16,9 @@ Download and install the latest version from the [official GnuCash website](http
 
 Ensure the following accounts exist in GnuCash (use these exact names, as they are hard-coded in the script):
 
-- ***Assets:Checking - [Your Bank Name]** (Your main operating account)
+- **Assets:Checking - [Your Bank Name]** (Your main operating account)
 - **Expenses:Square Fees**
-- ***Liabilities:Sales Tax Payable**
+- **Liabilities:Sales Tax Payable**
 - **Income:Sales:Card Revenue**
 
 #### **Create Temporary Holding Account:**
@@ -111,8 +111,8 @@ This phase generates the master source file, **QIF_Source_Data.csv**, required b
 
 For both sheets, select all columns containing monetary values and you **MUST REMOVE**:
 
-- All currency symbols `($\text{\$}$)`
-- Parentheses `($\text{()}$)`, and..
+- All currency symbols `$`
+- Parentheses `()`, and..
 - Thousands separator commas `($\text{,}$)`
 
 Format these columns as standard **Numbers** or **General**.
@@ -120,10 +120,12 @@ Format these columns as standard **Numbers** or **General**.
 #### Step 2: Build the Master Sheet
 
 1. **Create a third sheet** named **`MASTER_QIF_DATA`**.
-2. **Copy Base Fields:** Copy the following columns from the **`DEPOSITS_DATA`** sheet to the `MASTER_QIF_DATA` sheet. These will be your base columns:
-    ***Column A:** Date
-    * **Column B:** Deposit ID (Your unique VLOOKUP key)
-    * **Column C:** Sum of Deposited (The Net Deposit Amount)
+2. **Copy Base Fields:**
+   Copy the following columns from the **`DEPOSITS_DATA`** sheet to the `MASTER_QIF_DATA` sheet. These will be your base columns:
+
+- **Column A:** Date
+- **Column B:** Deposit ID (Your unique VLOOKUP key)
+- **Column C:** Sum of Deposited (The Net Deposit Amount)
 
 #### Step 3: Use VLOOKUP to Add Split Data
 
@@ -162,9 +164,11 @@ _This ensures the spreadsheet contains static numbers, not active formulas_
 
 ##### **Adjust Signs:**
 
-Select **Column E** (Tax) and **Column F** (Revenue). Use a formula (e.g., in a temporary column, `=E2 * -1`) or a Paste Special function to **multiply the entire column by -1**.
+Select **Column E** (Tax) and **Column F** (Revenue).
+Use a formula (e.g., in a temporary column, `=E2 * -1`)
+or a Paste Special function to **multiply the entire column by -1**.
 
-**Goal:** The numbers in columns E and F must now be negative (e.g., $\text{-31.15}$).
+**Goal:** The numbers in columns E and F must now be negative (e.g., `-31.15`).
 
 #### Step 5: Final Export to CSV
 
@@ -178,7 +182,7 @@ Copy the data and Paste Special -> **Values** into a brand new, empty spreadshee
 
 ##### **Save The CSV:**
 
-Save this new file as **QIF\_Source\_Data.csv**.
+Save this new file as `QIF_Source_Data.csv`.
 
 **ENSURE THE SAVED CSV FILE DOES NOT CONTAIN ANY HEADER ROW.**
 
