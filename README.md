@@ -102,12 +102,20 @@ This phase generates the master source file, **QIF_Source_Data.csv**, required b
 
 #### Step 1: Prepare the Source Data
 
-1. **Open two separate sheets/tabs** in your spreadsheet program (Excel, Google Sheets, etc.):
+1 **Open two separate sheets/tabs** in your spreadsheet program (Excel, Google Sheets, etc.):
 
 - **Sheet 1: `SALES_DATA`** (Source of Fees, Tax, Revenue)
 - **Sheet 2: `DEPOSITS_DATA`** (Source of Net Deposit Amount and Deposit ID).
 
-2. **Clean Source Data:** For both sheets, select all columns containing monetary values and you **MUST REMOVE** all currency symbols ($\text{\$}$), parentheses ($\text{()}$), and thousands separator commas ($\text{,}$). Format these columns as standard **Numbers** or **General**.
+2 **Clean Source Data:**
+
+For both sheets, select all columns containing monetary values and you **MUST REMOVE**:
+
+- All currency symbols `($\text{\$}$)`
+- Parentheses `($\text{()}$)`, and..
+- Thousands separator commas `($\text{,}$)`
+
+Format these columns as standard **Numbers** or **General**.
 
 #### Step 2: Build the Master Sheet
 
