@@ -8,189 +8,121 @@ This guide documents the full, repeatable process for converting complex Square 
 
 ### Phase 1: Setup and Configuration (One-Time)
 
-#### **Download GnuCash:**
+#### **1. Download GnuCash:**
 
 Download and install the latest version from the [official GnuCash website](https://gnucash.org/).
 
-#### **Create Chart of Accounts:**
+#### **2. Create Essential Chart of Accounts:**
 
-Ensure the following accounts exist in GnuCash (use these exact names, as they are hard-coded in the script):
+Ensure the following **permanent** accounts exist in GnuCash (use these exact names, as they are hard-coded in the script):
 
-- **Assets:Checking - [Your Bank Name]** (Your main operating account)
-- **Expenses:Square Fees**
-- **Liabilities:Sales Tax Payable**
-- **Income:Sales:Card Revenue**
+* **Assets:Checking - [Your Bank Name]** (Your main operating account)
+* **Expenses:Square Fees**
+* **Liabilities:Sales Tax Payable**
+* **Income:Sales:Card Revenue**
 
-#### **Create Temporary Holding Account:**
+#### **3. Create Temporary Holding Account:**
 
-Create a temporary account named **Assets:Square Holding**. This account is used by the QIF script as a placeholder during the import process.
+Create a temporary account named **Assets:Square Holding**. This account is **crucial** and is used by the QIF script as a buffer during the import process.
 
-#### **Install Node.js:**
+#### **4. Install Node.js:**
 
-Download and install Node.js from the [official NodeJs website](https://nodejs.org/)
-_(required to run the custom JavaScript conversion script)_
+Download and install Node.js from the [official NodeJs website](https://nodejs.org/).
+**(Required to run the custom JavaScript conversion script)**
 
-#### **Save `convert.js` Script:**
+#### **5. Save `convert.js` Script:**
 
-Save the final, optimized JavaScript code as a file here in this repository named [**convert.js**](./convert.js) in a dedicated project folder.
+Save the final, optimized JavaScript code as a file named **`convert.js`** in a dedicated project folder.
 
 ---
 
-### Phase 2: Obtain Square Reports
+### Phase 2: Obtain Square Reports (The Data Source)
 
-The reason that this process is so complicated is that Square does **not** provide a single report that contains the data that we need, which is both:
+The reason that this process is so complicated is that Square does **not** provide a single report that contains the data that we need. We must combine data from two separate reports using a common key.
 
-- The final net **Deposit Amount** (for bank reconciliation)
-- All the necessary **Split Details** (Fees, Tax, Revenue) linked by the same unique ID.
+#### 🧾 Required Data Points
 
-We have to use two different reports and link them using a common key.
+| Data Point | Report Source | Purpose |
+| :--- | :--- | :--- |
+| **Deposit ID** | Transfers Report | Unique key to link both files. |
+| **Sum of Deposited** (Net) | Transfers Report | Amount for final bank reconciliation. |
+| **Gross Revenue** | Sales Summary Report | Splits to **Income:Sales:Card Revenue**. |
+| **Processing Fees** | Sales Summary Report | Splits to **Expenses:Square Fees**. |
+| **Tax Collected** | Sales Summary Report | Splits to **Liabilities:Sales Tax Payable**. |
 
-#### 🧾 Square Reports Used for Multi-Split Conversion
-
-We needed two distinct reports to gather all the necessary data points (Date, Net Deposit, Fees, Tax, Revenue) that the JavaScript script required for a balanced transaction.
+---
 
 ##### 1. Report for Split Details: The **Sales Summary Report (or Item Sales)**
 
-This report provides the granular financial activity necessary for the splits—specifically:
+This report provides the granular financial activity necessary for the splits.
 
-- The Fees
-- The Tax Collected
-- The Gross Revenue.
-  
-We need to find a version that includes the unique **Deposit ID** or **Transaction ID** linked to the sale.
+**How to Find and Download:**
 
-| Data Pulled | Split Account |
-|-------------|----------------|
-| Gross Sales / Card Revenue | Income:Sales:Card Revenue |
-| Processing Fees | Expenses:Square Fees |
-| Tax Collected | Liabilities:Sales Tax Payable |
-
-How to Find and Download:
-
-1. Sign in to your **Square Dashboard** (online, not the app).
-2. Navigate to the **Reports** section (often found under the **Sales** tab).
+1. Sign in to your **Square Dashboard** (online).
+2. Navigate to the **Reports** section (usually under the **Sales** tab).
 3. Select **Sales Summary** or **Item Sales**.
-4. Set the desired **Date Range** (e.g., the entire month or year).
-5. Look for **Advanced Options** or **Export Settings** to ensure you are exporting a detailed view.
+4. Set the desired **Date Range**.
+5. Use **Advanced Options** or **Export Settings** to ensure you are exporting a **detailed view** that includes the **Deposit ID** or **Transaction ID**.
 6. Click the **Export** icon and download the report as a **CSV** file.
 
 ##### 2. Report for Reconciliation: The **Transfers Report (or Deposits Report)**
 
-This report provides the single **Net Deposit Amount** and, crucially, the unique **Deposit ID** that is used to link all the associated sales (and their splits) together.
+This report provides the single **Net Deposit Amount** and the crucial **Deposit ID**.
 
-| Data Pulled | Split Account |
-|-------------|----------------|
-| Deposit ID | The unique key used for VLOOKUP |
-| Sum of Deposited | Assets:Checking - [Your Bank Name] (The amount that hit the bank) |
-
-How to Find and Download:
+**How to Find and Download:**
 
 1. Sign in to your **Square Dashboard**.
 2. Navigate to the **Balance** or **Banking** section.
 3. Look for a section titled **Transfers** or **View All Transfers**.
-4. Set the same **Date Range** used for the Sales Summary Report.
-5. This view typically shows the net amount deposited into your bank account.
-6. Click the **Export** button to download the transfer details as a **CSV** file. **Note:** This report sometimes lists the individual transactions that make up the transfer, but the key is the **Deposit ID** which is the link back to the net amount.
+4. Set the **same Date Range** used for the Sales Summary Report.
+5. Click the **Export** button to download the transfer details as a **CSV** file.
 
 ---
 
-### Phase 3: Detailed Data Extraction and Preparation (Pivot Table/VLOOKUP)
+### Phase 3: Detailed Data Extraction and Preparation (VLOOKUP)
 
-The Pivot Table's Purpose: The Pivot Table/VLOOKUP process is required solely to merge these two files—linking the split data from Report 1 with the net deposit amount from Report 2—using the common Deposit ID to ensure every transaction in the new file was perfectly balanced.
-
-This phase generates the master source file, **QIF_Source_Data.csv**, required by the script.
+The VLOOKUP process is required solely to merge these two files and ensure every transaction in the new file is perfectly balanced. This phase generates the master source file, **`QIF_Source_Data.csv`**.
 
 #### Step 1: Prepare the Source Data
 
-1 **Open two separate sheets/tabs** in your spreadsheet program (Excel, Google Sheets, etc.):
+1. **Open two separate sheets/tabs** in your spreadsheet program: **`SALES_DATA`** and **`DEPOSITS_DATA`**.
+2. **Clean Source Data:** For all monetary columns, you **MUST REMOVE**:
+    * All currency symbols `$`
+    * Parentheses `()`
+    * Thousands separator commas `($\text{,}$)`
+    * **Format these columns as standard Numbers or General.**
 
-- **Sheet 1: `SALES_DATA`** (Source of Fees, Tax, Revenue)
-- **Sheet 2: `DEPOSITS_DATA`** (Source of Net Deposit Amount and Deposit ID).
-
-2 **Clean Source Data:**
-
-For both sheets, select all columns containing monetary values and you **MUST REMOVE**:
-
-- All currency symbols `$`
-- Parentheses `()`, and..
-- Thousands separator commas `($\text{,}$)`
-
-Format these columns as standard **Numbers** or **General**.
-
-#### Step 2: Build the Master Sheet
+#### Step 2: Build the Master Sheet (`MASTER_QIF_DATA`)
 
 1. **Create a third sheet** named **`MASTER_QIF_DATA`**.
-2. **Copy Base Fields:**
-   Copy the following columns from the **`DEPOSITS_DATA`** sheet to the `MASTER_QIF_DATA` sheet. These will be your base columns:
-
-- **Column A:** Date
-- **Column B:** Deposit ID (Your unique VLOOKUP key)
-- **Column C:** Sum of Deposited (The Net Deposit Amount)
+2. **Copy Base Fields:** Copy the following columns from the **`DEPOSITS_DATA`** sheet:
+    * **Column A:** Date
+    * **Column B:** Deposit ID (Your unique VLOOKUP key)
+    * **Column C:** Sum of Deposited (The Net Deposit Amount)
 
 #### Step 3: Use VLOOKUP to Add Split Data
 
-We will now use `VLOOKUP` (or equivalent like XLOOKUP) on the `MASTER_QIF_DATA` sheet to pull the fees, tax, and revenue from the `SALES_DATA` sheet, matching them on the **Deposit ID** (Column B).
-
-##### **Pre-requisite:**
-
-On your `SALES_DATA` sheet, ensure the **Deposit ID** column is the **first column** in the `VLOOKUP` search range.
-
-##### **Get Square Fees (Expense):**
-
-In **Column D** of `MASTER_QIF_DATA` (Header: Fees Positive), use VLOOKUP to pull the fee amount based on the Deposit ID in B2.
-
-_Example Formula (Adjust Range and Index):_
-
-```formula
-=VLOOKUP(B2, SALES_DATA!$A$2:$Z$999, [Fees Column Index], FALSE)`
-```
-
-##### **Get Sales Tax (Liability):**
-
-In **Column E** (Header: Tax Negative), use VLOOKUP to pull the Sales Tax liability amount.
-
-##### **Get Card Revenue (Income):**
-
-In **Column F** (Header: Revenue Negative), use VLOOKUP to pull the Gross Sales/Card Revenue amount.
-
-##### **Copy formulas down** for all rows
+1. **Pre-requisite:** On your `SALES_DATA` sheet, ensure the **Deposit ID** column is the **first column** in the `VLOOKUP` search range.
+2. **VLOOKUP Formulas (Columns D, E, F):** Use VLOOKUP to pull the Fees, Sales Tax, and Gross Revenue from `SALES_DATA` into the respective columns of `MASTER_QIF_DATA`, matching on the **Deposit ID** (Column B).
+3. **Copy formulas down** for all rows.
 
 #### Step 4: Convert Formulas to Values and Adjust Signs
 
-##### **Convert All Formulas to Values:**
-
-Select columns D, E, and F. **Copy them, then immediately Paste Special → Values** over the same columns.
-_This ensures the spreadsheet contains static numbers, not active formulas_
-
-##### **Adjust Signs:**
-
-Select **Column E** (Tax) and **Column F** (Revenue).
-Use a formula (e.g., in a temporary column, `=E2 * -1`)
-or a Paste Special function to **multiply the entire column by -1**.
-
-**Goal:** The numbers in columns E and F must now be negative (e.g., `-31.15`).
+1. **Convert All Formulas to Values:** Select columns D, E, and F. **Copy them, then immediately Paste Special → Values** over the same columns. *(This guarantees the spreadsheet contains static numbers, not active formulas)*
+2. **Adjust Signs (Negation):** Select **Column E** (Tax) and **Column F** (Revenue). Use a formula (e.g., in a temporary column, `=E2 * -1`) to **multiply the entire column by -1**.
+    * **Goal:** The numbers in columns E and F must now be **negative** (e.g., $\text{-31.15}$).
 
 #### Step 5: Final Export to CSV
 
-##### **Select Final Data:**
-
-Select the final six columns, **in this exact order** (A through F): Date, Deposit ID, Sum of Deposited, Fees Positive, Tax Negative, Revenue Negative.
-
-##### **Prepare The New File:**
-
-Copy the data and Paste Special -> **Values** into a brand new, empty spreadsheet file.
-
-##### **Save The CSV:**
-
-Save this new file as `QIF_Source_Data.csv`.
-
-**ENSURE THE SAVED CSV FILE DOES NOT CONTAIN ANY HEADER ROW.**
+1. **Select Final Data:** Select the final six columns, **in this exact order**: Date, Deposit ID, Sum of Deposited, Fees Positive, Tax Negative, Revenue Negative.
+2. **Save The CSV:** Save this new data as **`QIF_Source_Data.csv`**.
+    * **CRITICAL:** The saved CSV file **MUST NOT CONTAIN ANY HEADER ROW.**
 
 ---
 
 ### Phase 4: Script Execution and QIF Import
 
-#### **Run the Conversion Script:**
+#### **1. Run the Conversion Script:**
 
 Open your terminal or command prompt, navigate to the project folder, and run the conversion script:
 
@@ -198,62 +130,53 @@ Open your terminal or command prompt, navigate to the project folder, and run th
 node convert.js
 ```
 
-_Output:_
+Output: A file named Square_Transactions_Import.qif will be generated.
 
-```bash
-A file named **Square_Transactions_Import.qif** will be generated.
-```
+#### **2. Import QIF into GnuCash (Targeting Holding Account):**
 
-#### **Import QIF into GnuCash:**
-
-- In GnuCash, go to **File** -> **Import** -> **Import QIF...**
-- Select the **Square_Transactions_Import.qif** file.
-- When prompted for the **Account Name**, enter the **EXACT** name of your checking account (e.g., **Assets:Checking - Wells Fargo**).
-- On the Category Matching screen, click **Next**.
-- Confirm the import.
-
----
+1. In GnuCash, go to `File -> Import -> Import QIF`
+2. Select the Square_Transactions_Import.qif file.
+3. CRITICAL STEP:
+   When prompted for the Account Name, enter the EXACT name of your TEMPORARY HOLDING ACCOUNT (Assets:Square Holding).
+4. On the Category Matching screen, click Next.
+5. Confirm the import.
 
 ### Phase 5: Bank Statement Import and Reconciliation
 
-This step matches the QIF imports against the bank's records to clear the transactions.
+This step matches the QIF-imported splits (Phase 4) against the bank's records to clear the transactions.
 
-#### **Download Bank Statement:**
+1. Download Bank Statement:
+   Download your checking account statement from your bank as a CSV file (containing Date, Description, Credit, Debit columns).
 
-Download your checking account statement from your bank as a **CSV** file (containing Date, Description, Credit, Debit columns).
+2. Import CSV (Targeting Checking Account):
+   Go to File -> Import -> Import CSV... and select your bank statement file.
 
-#### **Import CSV:**
+3. Map Columns:
+   Map the fields as follows:
 
-Go to **File** -> **Import** -> **Import CSV...** and select your bank statement file.
+   | GnuCash Field | CSV Column |
+   |---------------|------------|
+   | Date | Date (from CSV) |
+   | Number | Check Number (or unique ID from CSV) |
+   | Description | Description (from CSV) |
+   | Amount Credit | (from CSV) |
+   | Amount (Negated) | Debit (from CSV) |
 
-#### **Map Columns:**
+4. Match and Clear:
 
-Map the fields as follows:
+   On the Import Matcher screen, GnuCash will automatically match the simple bank deposits against the detailed QIF-imported split transactions.
 
-| GnuCash | CSV |
-|---------|-----|
-| Date | Date (from CSV) |
-| Number | Check Number (or other unique ID from CSV, if present) |
-| Description | Description (from CSV) |
-| Amount | Credit (from CSV) |
-| Amount (Negated) | Debit (from CSV) |
+    Accept all matches.
 
-#### **Match and Clear:**
-
-On the **Import Matcher** screen, GnuCash will automatically match the simple bank deposits against the detailed QIF-imported split transactions.
-
-#### **Accept all matches.**
-
-_Result:_ The transactions will be marked as **Cleared (C)**.
-
----
+    Result: The transactions will be marked as Cleared (C) and the balance is effectively transferred from the Holding Account to the Checking Account.
 
 ### Phase 6: Final Cleanup and Reporting
 
-#### **Delete Holding Account:**
+1. Delete Holding Account:
 
-Once reconciliation is complete, **Right-click** on the temporary **Assets:Square Holding** account in the Chart of Accounts and select **Delete Account**, choosing **"Delete all transactions"** in the dialogue box.
+   Once reconciliation is complete, Right-click on the temporary Assets:Square Holding account in the Chart of Accounts and select Delete Account, choosing "Delete all transactions" in the dialogue box. (The transactions are now correctly recorded in the checking account).
 
-#### **Generate Reports:**
+2. Generate Reports:
 
-Go to **Reports** -> **Income & Expense** -> **Profit & Loss** and **Balance Sheet** to generate the final, accurate financial statements.
+   Go to: `Reports -> Income & Expense -> Profit & Loss and Balance Sheet`
+   To generate the final, accurate financial statements.
